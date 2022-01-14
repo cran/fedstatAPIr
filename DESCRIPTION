@@ -1,7 +1,7 @@
 Package: fedstatAPIr
-Title: Unofficial API for Fedstat (EMISS) for Automatic and Efficient
-        Data Queries
-Version: 0.1
+Title: Unofficial API for Fedstat (Rosstat EMISS System) for Automatic
+        and Efficient Data Queries
+Version: 0.2.0
 Authors@R: 
     person(given = "Denis",
            family = "Krylov",
@@ -12,12 +12,14 @@ License: MIT + file LICENSE
 URL: https://github.com/DenchPokepon/fedstatAPIr
 BugReports: https://github.com/DenchPokepon/fedstatAPIr/issues
 Encoding: UTF-8
-RoxygenNote: 7.1.1
-Imports: httr, rvest, jsonlite, stringr, dplyr, xml2, readsdmx, rsdmx,
+LazyData: true
+RoxygenNote: 7.1.2
+Imports: httr, rvest, jsonlite, stringr, dplyr, xml2, readsdmx,
         magrittr, utils, rlang, methods
+Depends: R (>= 2.10)
 NeedsCompilation: no
-Packaged: 2021-07-15 13:40:47 UTC; denis
+Packaged: 2022-01-14 14:22:50 UTC; denis
 Author: Denis Krylov [aut, cre]
 Maintainer: Denis Krylov <deniskrylovvit@gmail.com>
 Repository: CRAN
-Date/Publication: 2021-07-19 07:30:06 UTC
+Date/Publication: 2022-01-14 16:52:46 UTC

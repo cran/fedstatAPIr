@@ -6,6 +6,7 @@
 \usage{
 fedstat_get_data_ids(
   indicator_id,
+  ...,
   timeout_seconds = 180,
   retry_max_times = 3,
   httr_verbose = httr::verbose(data_out = FALSE)
@@ -14,6 +15,8 @@ fedstat_get_data_ids(
 \arguments{
 \item{indicator_id}{character, indicator id/code from indicator URL.
 For example for indicator with URL https://www.fedstat.ru/indicator/37426 indicator id will be 37426}
+
+\item{...}{other arguments passed to httr::GET}
 
 \item{timeout_seconds}{numeric, maximum time before a new GET request is tried}
 
@@ -66,8 +69,7 @@ except for the standard data sorting,
 but their incorrect specification will lead either to incomplete data loading or to no data at all.
 For the excel format, these ids determine the form of data presentation, as in the data preview on the fedstat site.
 For now only default filter_field_object_ids are used, which are parsed from java script source code on indicator web page.
-In theory, it is possible to let the user specify filter_field_object_ids himself,
-but this will add unnecessary complexity and room for errors on the user side.
+Users can specify filter_field_object_ids for each filter_field in resulting data_ids table.
 }
 \examples{
 \dontrun{

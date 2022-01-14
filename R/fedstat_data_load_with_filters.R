@@ -34,7 +34,10 @@
 #'   to compare the equality of `data_ids` and `filters`
 #'
 #' @inheritParams fedstat_get_data_ids
+#' @param ... other arguments passed to httr::GET and httr::POST
 #' @inheritParams fedstat_data_ids_filter
+#' @param timeout_seconds numeric, maximum time before a new GET and POST request is tried
+#' @param retry_max_times numeric, maximum number of tries to GET and POST `data_ids`
 #' @inheritParams fedstat_get_data_ids_special_cases_handle
 #'
 #' @return data.frame with filtered indicator data from fedstat.ru
@@ -64,23 +67,45 @@
 #' # Not actual filter field titles and filter values titles because of ASCII requirement for CRAN
 #' }
 fedstat_data_load_with_filters <- function(indicator_id,
-                                           filters,
+                                           ...,
+                                           filters = list(),
                                            filter_value_title_alias_lookup_table = data.frame(
                                              filter_value_title = character(),
-                                             filter_value_title_alias = character()
+                                             filter_value_title_alias = character(),
+                                             stringsAsFactors = FALSE
                                            ),
+                                           timeout_seconds = 180,
+                                           retry_max_times = 3,
                                            disable_warnings = FALSE,
                                            httr_verbose = httr::verbose(data_out = FALSE)) {
-  data <- fedstat_get_data_ids(indicator_id, httr_verbose = httr_verbose) %>%
-    fedstat_get_data_ids_special_cases_handle(
-      filter_value_title_alias_lookup_table = filter_value_title_alias_lookup_table
-    ) %>%
-    fedstat_data_ids_filter(
-      filters = filters,
-      disable_warnings = disable_warnings
-    ) %>%
-    fedstat_post_data_ids_filtered(httr_verbose = httr_verbose) %>%
-    fedstat_parse_sdmx_to_table()
+  data_ids <- fedstat_get_data_ids(
+    indicator_id,
+    ... = ...,
+    timeout_seconds = timeout_seconds,
+    retry_max_times = retry_max_times,
+    httr_verbose = httr_verbose
+  )
 
-  return(data)
+  data_ids_special_cases_handled <- fedstat_get_data_ids_special_cases_handle(
+    data_ids = data_ids,
+    filter_value_title_alias_lookup_table = filter_value_title_alias_lookup_table
+  )
+
+  data_ids_special_cases_handled_filtered <- fedstat_data_ids_filter(
+    data_ids = data_ids_special_cases_handled,
+    filters = filters,
+    disable_warnings = disable_warnings
+  )
+
+  data_raw <- fedstat_post_data_ids_filtered(
+    data_ids = data_ids_special_cases_handled_filtered,
+    ... = ...,
+    timeout_seconds = timeout_seconds,
+    retry_max_times = retry_max_times,
+    httr_verbose = httr_verbose
+  )
+
+  data_data_frame <- fedstat_parse_sdmx_to_table(data_raw = data_raw)
+
+  return(data_data_frame)
 }
