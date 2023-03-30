@@ -6,7 +6,7 @@
 #' Can also return full data codes dictionary for the indicator
 #'
 #' @param data_raw sdmx raw bytes
-#' @param return_type character, "data" or "dicionary", data for actual data,
+#' @param return_type character, "data" or "dictionary", data for actual data,
 #' dictionary for sdmx lookup table (full data codes dictionary)
 #' @param try_to_parse_ObsValue logical, try to parse ObsValue column from character to R numeric type
 #'
@@ -54,7 +54,8 @@ fedstat_parse_sdmx_to_table <- function(data_raw, return_type = c("data", "dicti
   data <- readsdmx::read_sdmx(tmp_file) %>% data.table::as.data.table()
 
   names(data) <- iconv(names(data), "UTF-8", "UTF-8") # repair cyrillic symbols encoding
-  names(data) <- sub(x = names(data), "X(\\d+)\\.", "\\1-") # fix readsdmx renaming like "X30.ОКАТО" -> "30-ОКАТО"
+  names(data) <- sub(x = names(data), "^X(\\d+)\\.", "\\1-") # fix readsdmx renaming like "X30.OKATO" -> "30-OKATO"
+  names(data) <- sub(x = names(data), "^X(\\d)", "\\1") # fix readsdmx renaming line "X2" - > "2"
 
   if (file.exists(tmp_file)) file.remove(tmp_file)
 
@@ -92,11 +93,20 @@ fedstat_parse_sdmx_to_table <- function(data_raw, return_type = c("data", "dicti
   field_ids <- codelist_tbl[["field_id"]] %>%
     unique()
 
+  if (length(setdiff(field_ids, names(data))) != 0L) {
+    stop(
+      "Expected columns not found in data: ",
+      setdiff(field_ids, names(data)), "\n",
+      "there are only these columns in the data: ", paste(names(data), collapse = ", "),
+      "\nIt's likely to be an encoding or parsing error, please report this issue on github repository of this package"
+    )
+  }
+
   data_res <- lapply(field_ids, function(x) {
     codelist_tbl[field_id == x][
       ,
       c("value_title", "value_id")
-      ][data[, x, with = FALSE], on = c(value_id = x)][["value_title"]]
+    ][data[, x, with = FALSE], on = c(value_id = x)][["value_title"]]
   }) %>%
     `names<-`(field_ids) %>%
     data.table::as.data.table() %>%

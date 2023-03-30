@@ -1,7 +1,7 @@
 Package: fedstatAPIr
 Title: Unofficial API for Fedstat (Rosstat EMISS System) for Automatic
         and Efficient Data Queries
-Version: 1.0.0
+Version: 1.0.3
 Authors@R: c(
     person(given = "Denis",
            family = "Krylov",
@@ -23,9 +23,9 @@ Imports: httr, jsonlite, xml2, readsdmx, magrittr, utils, methods,
         data.table
 Depends: R (>= 2.10)
 NeedsCompilation: no
-Packaged: 2023-03-10 16:15:56 UTC; denis
+Packaged: 2023-03-30 07:02:25 UTC; denis
 Author: Denis Krylov [aut, cre],
   Dmitry Kibalnikov [aut]
 Maintainer: Denis Krylov <deniskrylovvit@gmail.com>
 Repository: CRAN
-Date/Publication: 2023-03-10 22:00:02 UTC
+Date/Publication: 2023-03-30 08:30:02 UTC
