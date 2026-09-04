@@ -48,13 +48,29 @@ fedstat_parse_sdmx_to_table <- function(data_raw, return_type = c("data", "dicti
   return_type <- match.arg(return_type, return_type)
 
   tmp_file <- tempfile()
-  writeLines(rawToChar(data_raw), tmp_file)
+  raw_text <- rawToChar(data_raw)
+
+  # Detect HTML error pages before attempting XML parsing
+  if (grepl("<!DOCTYPE\\s+html|<html", raw_text, ignore.case = TRUE, perl = TRUE)) {
+    if (grepl("CSRF", raw_text, ignore.case = TRUE)) {
+      stop("Received an HTML CSRF error page instead of SDMX data. ",
+           "The CSRF token may have expired. ",
+           "Please re-run from fedstat_get_data_ids() to obtain a fresh token.",
+           call. = FALSE)
+    }
+    stop("Received an HTML page instead of SDMX data. ",
+         "EMISS likely returned an error page.\n",
+         "Preview: ", substr(raw_text, 1, 300),
+         call. = FALSE)
+  }
+
+  writeLines(raw_text, tmp_file)
 
   xml <- xml2::read_xml(tmp_file)
   data <- readsdmx::read_sdmx(tmp_file) %>% data.table::as.data.table()
 
   names(data) <- iconv(names(data), "UTF-8", "UTF-8") # repair cyrillic symbols encoding
-  names(data) <- sub(x = names(data), "^X(\\d+)\\.", "\\1-") # fix readsdmx renaming like "X30.OKATO" -> "30-OKATO"
+  names(data) <- sub(x = names(data), "^X(\\d+)\\.", "\\1-") # fix readsdmx renaming like "X30.ОКАТО" -> "30-ОКАТО"
   names(data) <- sub(x = names(data), "^X(\\d)", "\\1") # fix readsdmx renaming line "X2" - > "2"
 
   if (file.exists(tmp_file)) file.remove(tmp_file)
@@ -118,7 +134,7 @@ fedstat_parse_sdmx_to_table <- function(data_raw, return_type = c("data", "dicti
   if (try_to_parse_ObsValue) {
     ObsValue_already_NA <- data_res[is.na(ObsValue) | trimws(ObsValue) == "", which = TRUE]
     data_res[, ObsValue := suppressWarnings(as.numeric(gsub(",", ".", ObsValue)))]
-    if (any(is.na(data_res$ObsValues[-ObsValue_already_NA]))) {
+    if (any(is.na(data_res$ObsValue[-ObsValue_already_NA]))) {
       stop(
         "Unable to parse ObsValue from character to numeric type automatically, set 'try_to_parse_ObsValue' to FALSE"
       )
