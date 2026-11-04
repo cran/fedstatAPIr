@@ -2,7 +2,7 @@
 % Please edit documentation in R/fedstat_data_load_with_filters.R
 \name{fedstat_data_load_with_filters}
 \alias{fedstat_data_load_with_filters}
-\title{Download subset of indicator data from fedstat.ru by specifying filters in JSON}
+\title{(Deprecated) Download indicator data from fedstat.ru in one request}
 \usage{
 fedstat_data_load_with_filters(
   indicator_id,
@@ -14,7 +14,8 @@ fedstat_data_load_with_filters(
   httr_verbose = NULL,
   loading_steps_verbose = TRUE,
   return_type = c("data", "dictionary"),
-  try_to_parse_ObsValue = TRUE
+  try_to_parse_ObsValue = TRUE,
+  allow_large_requests = FALSE
 )
 }
 \arguments{
@@ -42,7 +43,9 @@ because of ASCII requirement for CRAN}
 
 \item{timeout_seconds}{numeric, maximum time before a new GET and POST request is tried}
 
-\item{retry_max_times}{numeric, maximum number of tries to GET and POST \code{data_ids}}
+\item{retry_max_times}{numeric, maximum pipeline attempts, including the first.
+Only transient failures and one session repair are retried. Filter metadata
+are retained after a successful GET; retries do not nest.}
 
 \item{disable_warnings}{bool, enables or disables warnings about
 non matched \code{filter_value_title} in \code{filters} and \code{filter_value_title} from \code{data_ids}.}
@@ -53,14 +56,34 @@ about the processing of the request}
 \item{loading_steps_verbose}{logical, print data loading steps to console}
 
 \item{return_type}{character, "data" or "dictionary", data for actual data,
-dictionary for sdmx lookup table (full data codes dictionary)}
+dictionary for sdmx lookup table (full data codes dictionary).
+\code{\link[=fedstat_dictionary]{fedstat_dictionary()}} gets the dictionary without choosing filters.}
 
 \item{try_to_parse_ObsValue}{logical, try to parse ObsValue column from character to R numeric type}
+
+\item{allow_large_requests}{logical. \code{TRUE} allows selections of up to
+250,000 filter combinations instead of 100,000. Larger selections are
+always refused; use \code{\link[=fedstat_download]{fedstat_download()}} for them.}
 }
 \value{
 data.frame with filtered indicator data from fedstat.ru
 }
 \description{
+\strong{Deprecated: use \code{\link[=fedstat_download]{fedstat_download()}} and \code{\link[=fedstat_collect]{fedstat_collect()}}.}
+This function sends the whole selection to Fedstat as one request, with no
+pauses or saved progress. Large selections are slow, often fail and put
+heavy load on Fedstat. It is kept so that existing scripts keep working.
+Replace \code{data <- fedstat_data_load_with_filters("31074", filters = filters)}
+with \code{job <- fedstat_download("31074", filters = filters)} and
+\code{data <- fedstat_collect(job)}.
+
+Size is the number of filter combinations: the product of the number of
+selected values of every filter. Up to 50,000 combinations, a deprecation
+message is shown once per session. Above 50,000, every call warns. Above
+100,000, the function stops unless \code{allow_large_requests = TRUE}, and above
+250,000 it always stops: such requests load Fedstat for all its users and
+rarely succeed.
+
 This function is a wrapper for the other functions of the package
 to provide a simple one function API for fedstat.ru
 
@@ -102,19 +125,20 @@ to compare the equality of \code{data_ids} and \code{filters}
 # Download CPI data
 # for all goods and services for Russian Federation
 data <- fedstat_data_load_with_filters(
-  indicator_id = "31074",
-  filters = list(
-    "Territory" = "Russian Federation",
-    "Year" = "2023",
-    "Period" = "January",
-    "Types of goods and services" = "*"
-  )
+    indicator_id = "31074",
+    filters = list(
+        "Territory" = "Russian Federation",
+        "Year" = "2023",
+        "Period" = "January",
+        "Types of goods and services" = "*"
+    )
 )
 # Not actual filter field titles and filter values titles because of ASCII requirement for CRAN
 }
 }
 \seealso{
 \code{
+  \link{fedstat_download},
   \link{fedstat_get_data_ids},
   \link{fedstat_data_ids_filter},
   \link{fedstat_post_data_ids_filtered},

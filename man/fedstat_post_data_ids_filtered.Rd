@@ -10,13 +10,14 @@ fedstat_post_data_ids_filtered(
   data_format = c("sdmx", "excel"),
   timeout_seconds = 180,
   retry_max_times = 3,
-  httr_verbose = NULL
+  httr_verbose = NULL,
+  allow_large_requests = FALSE
 )
 }
 \arguments{
-\item{data_ids}{data.frame, can be a result of \code{fedstat_get_data_ids} or
-\code{fedstat_get_data_ids_special_cases_handle} to download all available data,
-or a result of \code{fedstat_data_ids_filter} to download subset of available data}
+\item{data_ids}{data.frame, a result of \code{fedstat_data_ids_filter} to download
+a subset of the available data (all data of an indicator usually exceed the
+size limit)}
 
 \item{...}{other arguments passed to httr::POST}
 
@@ -24,33 +25,47 @@ or a result of \code{fedstat_data_ids_filter} to download subset of available da
 
 \item{timeout_seconds}{numeric, maximum time before POST request times out}
 
-\item{retry_max_times}{numeric, not used for POST (CSRF tokens are single-use),
+\item{retry_max_times}{numeric, not used for POST (exports are not retried here),
 but used for fallback GET if CSRF token needs to be fetched}
 
 \item{httr_verbose}{\code{httr::verbose()} or NULL, outputs messages to the console
 about the processing of the request}
+
+\item{allow_large_requests}{logical. \code{TRUE} turns off the warning above
+50,000 filter combinations and allows up to 250,000. Larger requests are
+always refused.}
 }
 \value{
 raw bytes (sdmx or excel)
 }
 \description{
+For advanced use. Most downloads should use \code{\link[=fedstat_download]{fedstat_download()}},
+which splits large selections, pauses between requests and saves progress.
+
 Creates a request body from \code{data_ids} and sends it to
 \code{https://www.fedstat.ru/indicator/downloadData.do?format=\{format\}}.
 Gets an sdmx or excel with data in binary format.
 
 The request includes a CSRF token that is automatically extracted by
 \code{fedstat_get_data_ids} and passed through via data.frame attributes.
-CSRF tokens are single-use: each POST consumes the token. For subsequent
-downloads, call \code{fedstat_get_data_ids} again.
+Token reuse may succeed, but Fedstat can reject a token at any time. This
+primitive sends one POST; the convenience wrapper and batch downloader own
+retry and token-refresh decisions.
 
 If no CSRF token is found in \code{data_ids} attributes (e.g. when using cached
 data_ids from a previous session), the function will attempt to fetch a
-fresh token automatically with a warning.
+fresh token automatically, using the same HTTP configuration.
 
 sdmx raw bytes can be passed to \code{fedstat_parse_sdmx_to_table} to create a
 data.frame or to \code{rawToChar} and \code{writeLines} to create an xml file
 
 excel raw bytes can be passed to \code{writeBin} to create an xls file
+
+Request size is limited to protect Fedstat. Size is the number of filter
+combinations: the product of the number of selected values of every filter.
+Above 50,000 combinations this function warns, above 100,000 it stops unless
+\code{allow_large_requests = TRUE}, and above 250,000 it always stops.
+\code{\link[=fedstat_download]{fedstat_download()}} splits larger selections into parts.
 }
 \examples{
 \dontrun{
@@ -59,15 +74,15 @@ excel raw bytes can be passed to \code{writeBin} to create an xls file
 # for all goods and services for Russian Federation
 # POST filters and download data in sdmx format
 data <- fedstat_get_data_ids("31074") \%>\%
-  fedstat_data_ids_filter(
-    filters = list(
-      "Territory" = "Russian Federation",
-      "Year" = "2023",
-      "Period" = "January",
-      "Types of goods and services" = "*"
-    )
-  ) \%>\%
-  fedstat_post_data_ids_filtered()
+    fedstat_data_ids_filter(
+        filters = list(
+            "Territory" = "Russian Federation",
+            "Year" = "2023",
+            "Period" = "January",
+            "Types of goods and services" = "*"
+        )
+    ) \%>\%
+    fedstat_post_data_ids_filtered()
 
 # Not actual filter field titles and filter values titles because of ASCII requirement for CRAN
 }

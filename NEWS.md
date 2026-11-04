@@ -1,3 +1,109 @@
+# fedstatAPIr 2.1.0
+
+The first release on CRAN since 1.1.0. Version 2.0.0 was published only on
+GitHub; all its changes are included here. `MIGRATION.md` on GitHub explains
+the upgrade from 1.x.
+
+## Breaking changes
+
+* Every function that requests data limits the size of one request, counted in
+  filter combinations (the product of the number of selected values of every
+  filter). Fedstat checks every combination, even empty ones, so huge requests
+  rarely succeed and slow Fedstat down for all its users. Above 50,000
+  combinations you get a warning; above 100,000 the request is refused unless
+  `allow_large_requests = TRUE`; above 250,000 it is always refused, with
+  nothing sent to Fedstat (error class `fedstat_too_large`).
+  `fedstat_data_load_with_filters()` and `fedstat_post_data_ids_filtered()`
+  gain `allow_large_requests` as their last argument. `fedstat_download()`
+  splits larger selections into parts.
+* `try_to_parse_ObsValue = TRUE` now reliably raises an error for values that
+  are not numbers; in 1.x this check could silently pass. Use `FALSE` to keep
+  values such as `"..."` as text.
+* An export that Fedstat marks as truncated is an error, not complete data.
+
+## New: reliable downloads in parts
+
+* `fedstat_download()` downloads an indicator in small parts, one request at a
+  time with pauses, and saves every finished part to disk. Fedstat builds every
+  combination of the selected filter values, so large selections are split into
+  parts of at most `max_nominal_cells_request` combinations (50,000 by default).
+  If a run stops (time allowance, Fedstat outage, closed R), running the same
+  call again continues with the remaining parts.
+* `max_nominal_cells_request` is the main setting for speed and reliability:
+  if parts keep failing, use 20,000 or 10,000; indicators with mostly empty
+  combinations download faster with larger parts.
+* `fedstat_download("31074", filters)` works positionally: `indicator_id`,
+  `filters` and `cache_dir` come first, then httr settings in `...`.
+* `cache_dir` is optional. Without it, the folder is named after the indicator
+  and the filters, so the same call resumes there. In an interactive session
+  you are asked once whether to create it in the current folder; scripts use
+  R's temporary folder.
+* Failed requests are retried. A part is split further when its size is the
+  likely cause: a timeout, a truncated export, or an export that Fedstat drops
+  or answers with a server error twice in a run. When Fedstat can't be
+  reached or refuses access, the download pauses to let it recover instead.
+  After the second split caused by failures, a warning suggests a smaller
+  `max_nominal_cells_request`.
+* If Fedstat renames or withdraws selected values during a download, the
+  download continues with a warning. It stops only if a whole filter is added or
+  removed, or an export contains values that were not requested.
+* `preview_first = TRUE` asks Fedstat to show each part's table before
+  downloading it, like pressing "Apply" on the website.
+* `fedstat_collect()` builds the table from a finished download. `ObsValue` is
+  numeric by default; if a value is not a number, it stops and names it
+  (`try_to_parse_ObsValue = FALSE` returns text).
+* `fedstat_cleanup()` deletes the saved parts after you have saved the table.
+* Each download keeps a diagnostic `download.log` without tokens, cookies or
+  response bodies.
+
+## New: filters and code dictionary
+
+* `fedstat_show_filters()` lists the filters of an indicator with their number
+  of values and examples, and prints a `filters <- list(...)` ready to copy: the
+  selection the website shows when the page opens. It also returns that list.
+* `fedstat_dictionary()` returns the full SDMX code lists of an indicator (every
+  code and name of every classification) without choosing filters. It downloads
+  a small sample, starting with the website's opening selection and trying a
+  few small random ones if that has no data. When no sample has data, the error
+  has class `fedstat_no_data`.
+* `fedstat_get_data_ids()` keeps the website's opening selection in the
+  `fedstat_default_selection` attribute; its columns are unchanged.
+
+## Deprecated
+
+* `fedstat_data_load_with_filters()` still works for small selections. It sends
+  the whole selection as one request, which is slow for large selections and
+  heavy for Fedstat. Up to 50,000 combinations it shows a deprecation message
+  once per session; above that it warns on every call (class
+  `fedstat_deprecated`). Use `fedstat_download()` and `fedstat_collect()`
+  instead, and `fedstat_dictionary()` instead of `return_type = "dictionary"`.
+
+## Other changes in existing functions
+
+All 1.x functions keep their names, existing arguments and defaults.
+
+* `retry_max_times` in `fedstat_data_load_with_filters()` counts whole attempts;
+  retries are no longer nested and permanent errors stop immediately.
+* A missing or expired download token is renewed automatically, with the same
+  HTTP settings.
+* httr settings passed in `...` apply to every request, including token
+  renewal. `httr::set_config()` and `options(fedstatAPIr.config = ...)` are
+  respected.
+* Errors have classes (all inheriting from `fedstat_error`) with the failed
+  step in `e$stage` and the HTTP status in `e$status`. Messages no longer include
+  response bodies, which may contain tokens.
+* Indicator pages are read more robustly, indicator codes are no longer limited
+  to digits, and SDMX parsing accepts files, uses less memory and rejects
+  damaged exports.
+
+## Documentation
+
+* New Russian and English READMEs for researchers: a quick example with real
+  data, how to find filters and codes, why downloads go in parts, how to tune
+  the part size, what to do about each message, and how to set a User-Agent if
+  Fedstat refuses the package.
+* `MIGRATION.md` explains upgrading from 1.x.
+
 # fedstatAPIr 1.1.0
 
 ## Breaking changes

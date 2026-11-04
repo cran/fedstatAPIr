@@ -1,7 +1,7 @@
 Package: fedstatAPIr
 Title: Unofficial API for Fedstat (Rosstat EMISS System) for Automatic
         and Efficient Data Queries
-Version: 1.1.0
+Version: 2.1.0
 Authors@R: c(
     person(given = "Denis",
            family = "Krylov",
@@ -12,20 +12,24 @@ Authors@R: c(
 	       role =c("aut"),
            email = "d.kibalnikov@gmail.com")     
     )  
-Description: An API for automatic data queries to the fedstat <https://www.fedstat.ru>, using a small set of functions with a common interface.
+Description: Downloads indicator data from Fedstat (EMISS), the Russian official
+    statistics portal <https://www.fedstat.ru>. Large selections are downloaded in
+    small, paced parts that are saved to disk and resume after interruptions.
+    Also lists the filters and the code dictionaries of indicators.
 License: MIT + file LICENSE
 URL: https://github.com/DenchPokepon/fedstatAPIr
 BugReports: https://github.com/DenchPokepon/fedstatAPIr/issues
 Encoding: UTF-8
 LazyData: true
-Imports: httr, jsonlite, xml2, readsdmx, magrittr, utils, methods,
+Imports: httr, jsonlite, xml2, readsdmx, magrittr, utils, stats, tools,
         data.table
 Depends: R (>= 3.5.0)
 Config/roxygen2/version: 8.1.0
+RoxygenNote: 7.2.3
 NeedsCompilation: no
-Packaged: 2026-09-04 01:29:22 UTC; denis
+Packaged: 2026-11-03 14:43:58 UTC; denis
 Author: Denis Krylov [aut, cre],
   Dmitry Kibalnikov [aut]
 Maintainer: Denis Krylov <deniskrylovvit@gmail.com>
 Repository: CRAN
-Date/Publication: 2026-09-04 02:30:02 UTC
+Date/Publication: 2026-11-04 03:10:03 UTC
